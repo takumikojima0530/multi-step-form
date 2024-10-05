@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect を追加
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 const MultiStepForm = () => {
@@ -16,6 +16,11 @@ const MultiStepForm = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  // 新しく追加: ステップが変更されたときにページの一番上にスクロール
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [step, isConfirming]);
 
   const jobPositions = [
     { id: 'job_1', value: '法人営業', salary: '月給30万円以上＋インセンティブ（試用期間：最大6ヶ月）' },
@@ -55,8 +60,16 @@ const MultiStepForm = () => {
         if (!formData.kana.trim()) newErrors.kana = '入力してください';
         break;
       case 5:
-        if (!formData.phone.trim()) newErrors.phone = '入力してください';
-        if (!formData.email.trim()) newErrors.email = '入力してください';
+        if (!formData.phone.trim()) {
+          newErrors.phone = '入力してください';
+        } else if (!/^\d{10,11}$/.test(formData.phone.trim())) {
+          newErrors.phone = '有効な電話番号を入力してください';
+        }
+        if (!formData.email.trim()) {
+          newErrors.email = '入力してください';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email.trim())) {
+          newErrors.email = '有効なメールアドレスを入力してください';
+        }
         break;
       default:
         break;
@@ -72,6 +85,15 @@ const MultiStepForm = () => {
       } else {
         setIsConfirming(true);
       }
+    }
+  };
+
+  // 新しく追加: handlePrevious 関数
+  const handlePrevious = () => {
+    if (isConfirming) {
+      setIsConfirming(false);
+    } else if (step > 1) {
+      setStep(step - 1);
     }
   };
 
