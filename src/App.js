@@ -15,6 +15,7 @@ const MultiStepForm = () => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const jobPositions = [
     { id: 'job_1', value: '法人営業', salary: '月給30万円以上＋インセンティブ（試用期間：最大6ヶ月）' },
@@ -74,34 +75,32 @@ const MultiStepForm = () => {
     }
   };
 
-  const handlePrevious = () => {
-    if (isConfirming) {
-      setIsConfirming(false);
-    } else {
-      setStep(step - 1);
-    }
-    setErrors({});
-  };
-
   const handleSubmit = async () => {
     if (validateStep()) {
       setIsSubmitting(true);
       try {
-        // ここで実際のAPIエンドポイントを指定します
-        const response = await fetch('/api/submit-form', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        });
-
-        if (response.ok) {
-          alert('フォームが正常に送信されました。');
-          // フォームをリセットするなどの処理をここに追加できます
-        } else {
-          throw new Error('送信に失敗しました');
-        }
+        // メールテンプレートの作成
+        const emailTemplate = `
+          就業状況: ${formData.employmentStatus}
+          希望職種: ${formData.desiredPositions.join(', ')}
+          年齢: ${formData.age}
+          氏名: ${formData.name}
+          フリガナ: ${formData.kana}
+          電話番号: ${formData.phone}
+          メールアドレス: ${formData.email}
+        `;
+  
+        // メール送信のシミュレーション
+        console.log('送信先: alusement@gmail.com');
+        console.log('件名: 新しい応募が届きました');
+        console.log('本文:');
+        console.log(emailTemplate);
+  
+        // 擬似的な遅延を追加（実際のAPI呼び出しを模倣）
+        await new Promise(resolve => setTimeout(resolve, 2000));
+  
+        setShowModal(true); // モーダルを表示
+        alert('メールの送信がシミュレートされました。コンソールで詳細を確認してください。');
       } catch (error) {
         console.error('Error submitting form:', error);
         alert('送信中にエラーが発生しました。しばらくしてからもう一度お試しください。');
@@ -271,55 +270,77 @@ const MultiStepForm = () => {
   );
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
-      <div className="mb-6 text-center">
-        <img src="/api/placeholder/100/100" alt="Logo" className="mx-auto" />
-        <h1 className="text-2xl font-bold mt-4">応募フォーム</h1>
-      </div>
-      {!isConfirming && (
-        <div className="flex justify-between mb-6">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div key={s} className="text-center flex-1">
-              <div className={`w-full h-2 ${s <= step ? 'bg-blue-500' : 'bg-gray-300'}`} />
-              <p className={`text-xs mt-1 ${s === step ? 'font-bold' : ''}`}>
-                Step {s}
-              </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+      <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-xl flex flex-col" style={{ height: '80vh' }}>
+        <div className="p-6 flex-shrink-0">
+          <div className="text-center">
+            <img src={process.env.PUBLIC_URL + '/logo.png'} alt="Logo" className="mx-auto h-16" />
+            <h1 className="text-2xl font-bold mt-4">応募フォーム</h1>
+          </div>
+          {!isConfirming && (
+            <div className="flex justify-between mt-6">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <div key={s} className="text-center flex-1">
+                  <div className={`w-full h-2 ${s <= step ? 'bg-blue-500' : 'bg-gray-300'}`} />
+                  <p className={`text-xs mt-1 ${s === step ? 'font-bold' : ''}`}>
+                    Step {s}
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+        <div className="flex-grow overflow-y-auto px-6">
+          {isConfirming ? renderConfirmation() : renderStep()}
+        </div>
+        <div className="p-6 flex-shrink-0">
+          <div className="flex justify-between">
+            {(step > 1 || isConfirming) && (
+              <button
+                onClick={handlePrevious}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                disabled={isSubmitting}
+              >
+                <ChevronLeft className="inline" /> 戻る
+              </button>
+            )}
+            {!isConfirming ? (
+              <button
+                onClick={handleNext}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ml-auto"
+                disabled={isSubmitting}
+              >
+                {step < 5 ? '次へ' : '確認'} <ChevronRight className="inline" />
+              </button>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 ml-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? '送信中...' : '送信する'}
+              </button>
+            )}
+          </div>
+          <div className="mt-6 text-center text-sm text-red-500">
+            新卒、中途、アルバイト募集中
+          </div>
+        </div>
+      </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-lg text-center max-w-md w-full">
+            <h2 className="text-2xl font-bold mb-4">送信完了</h2>
+            <p className="mb-6">お送りいただきありがとうございます。スタッフからのご返信をお待ちくださいませ。</p>
+            <button
+              onClick={() => setShowModal(false)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              閉じる
+            </button>
+          </div>
         </div>
       )}
-      {isConfirming ? renderConfirmation() : renderStep()}
-      <div className="mt-6 flex justify-between">
-        {(step > 1 || isConfirming) && (
-          <button
-            onClick={handlePrevious}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-            disabled={isSubmitting}
-          >
-            <ChevronLeft className="inline" /> 戻る
-          </button>
-        )}
-        {!isConfirming ? (
-          <button
-            onClick={handleNext}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 ml-auto"
-            disabled={isSubmitting}
-          >
-            {step < 5 ? '次へ' : '確認'} <ChevronRight className="inline" />
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 ml-auto"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? '送信中...' : '送信する'}
-          </button>
-        )}
-      </div>
-      <div className="mt-6 text-center text-sm text-red-500">
-        新卒、中途、アルバイト募集中
-      </div>
     </div>
   );
 };
